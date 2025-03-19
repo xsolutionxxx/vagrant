@@ -86,6 +86,35 @@ Vagrant.configure("2") do |config|
       sudo apt install -y nginx
       sudo systemctl enable nginx
       sudo systemctl start nginx
+
+      # sudo apt update && sudo apt install -y nginx php-fpm php-mysql
+      # sudo nano /etc/nginx/sites-available/default
+      # location ~ \.php$ {
+      #   include snippets/fastcgi-php.conf;
+      #   fastcgi_pass unix:/run/php/php7.2-fpm.sock;
+      #   fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+      #   include fastcgi_params;
+      # }
+      # sudo nginx -t
+      # sudo systemctl restart nginx
+      # sudo nano /var/www/html/index.php
+      # <?php
+      # $conn = new mysqli("192.168.56.11", "vagrant", "vagrant", "test_db");
+      # if ($conn->connect_error) {
+      #    die("Connection failed: " . $conn->connect_error);
+      # }
+
+      # $result = $conn->query("SELECT * FROM users");
+
+      # echo "<h1>Users List</h1>";
+      # while ($row = $result->fetch_assoc()) {
+      #    echo "<p>" . $row["id"] . ". " . $row["name"] . "</p>";
+      # }
+
+      # $conn->close();
+      # ?>
+      # sudo systemctl restart nginx
+
     SHELL
   end
 
@@ -101,9 +130,16 @@ Vagrant.configure("2") do |config|
       sudo systemctl enable mysql
       sudo systemctl start mysql
 
-      sudo mysql -e "CREATE DATABASE test_db;"
-      sudo mysql -e "USE test_db; CREATE TABLE users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL);"
-      sudo mysql -e "USE test_db; INSERT INTO users (name) VALUES ('Alice'), ('Bob'), ('Charlie');"
+      sudo mysql -e "CREATE DATABASE IF NOT EXISTS test_db;"
+      sudo mysql -e "CREATE USER IF NOT EXISTS 'vagrant'@'%' IDENTIFIED BY 'vagrant';"
+      sudo mysql -e "GRANT ALL PRIVILEGES ON test_db.* TO 'vagrant'@'%' WITH GRANT OPTION;"
+      sudo mysql -e "FLUSH PRIVILEGES;"
+
+      sudo mysql -e "USE test_db; CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL);"
+      sudo mysql -e "USE test_db; INSERT INTO users (name) VALUES ('Alice'), ('Bob'), ('Charlie') ON DUPLICATE KEY UPDATE name=name;"
+
+      sudo sed -i "s/^bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+      sudo systemctl restart mysql
     SHELL
   end
 
